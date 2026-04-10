@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawAlert — Admin Panel</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ── NAV OVERRIDE ── */
+  nav { background: rgba(28,18,8,.97) !important; border-bottom-color: rgba(255,255,255,.08) !important; }
+  .nav-logo { color: var(--amber-lt) !important; }
+  .nav-logo span { color: #fff !important; }
+  .nav-links a { color: rgba(255,255,255,.6) !important; }
+  .nav-links a:hover,.nav-links a.active { background: var(--amber) !important; color: #fff !important; }
+  .nav-right .user-chip { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.12) !important; color: rgba(255,255,255,.75) !important; }
+  .nav-right .user-chip .av { background: var(--amber-dk) !important; }
+  body { background: #F4F0EC; }
+
+  /* ── LAYOUT ── */
+  .admin-body { padding: 36px 5vw; max-width: 1280px; margin: 0 auto; }
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .admin-header h1 { font-family: 'Playfair Display', serif; font-size: 1.9rem; }
+  .admin-header .sub { color: var(--muted); font-size: .88rem; margin-top: 2px; }
+  .refresh-btn { background: var(--cream); border: 1.5px solid var(--border); border-radius: 999px; padding: 7px 18px; font-family: 'DM Sans', sans-serif; font-size: .83rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .2s; }
+  .refresh-btn:hover { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 14px; margin-bottom: 30px; }
+  .stat-card { background: #fff; border-radius: var(--radius); padding: 18px 20px; border: 1.5px solid var(--border); transition: all 0.2s; cursor: pointer; }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--amber); }
+  .stat-card .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+  .stat-card .value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; }
+  .stat-card .value.total    { color: var(--amber-dk); }
+  .stat-card .value.pending  { color: #B45309; }
+  .stat-card .value.progress { color: #0369A1; }
+  .stat-card .value.resolved { color: var(--green); }
+  .stat-card .value.users    { color: var(--teal); }
+  .stat-card .value.vols     { color: #7C3AED; }
+
+  /* ── TABS ── */
+  .panel-tabs { display: flex; gap: 4px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; max-width: 500px; }
+  .ptab { flex: 1; padding: 8px; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 6px; transition: all .2s; white-space: nowrap; }
+  .ptab.active { background: var(--ink); color: #fff; }
+
+  /* ── TABLE ── */
+  .tbl-wrap { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); box-shadow: var(--shadow); overflow-x: auto; }
+  .tbl-header { padding: 16px 20px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .tbl-header h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; }
+  .tbl-count { font-size: .8rem; background: var(--cream); border: 1.5px solid var(--border); border-radius: 999px; padding: 3px 12px; color: var(--muted); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f8f4f0; padding: 11px 14px; text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; border-bottom: 1.5px solid var(--border); white-space: nowrap; }
+  td { padding: 13px 14px; font-size: .86rem; border-bottom: 1px solid #f0e8de; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fdf8f3; }
+  .case-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; border: 1px solid var(--border); }
+  .case-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+
+  /* ── SELECT CONTROLS ── */
+  .status-sel {
+    border: none; border-radius: 999px; padding: 5px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: .75rem; font-weight: 700;
+    cursor: pointer; text-transform: uppercase; letter-spacing: .04em; outline: none;
+  }
+  .status-sel.pending  { background: #fff3e0; color: #b45309; }
+  .status-sel.progress { background: #e0f2fe; color: #0369a1; }
+  .status-sel.resolved { background: #dcfce7; color: #166534; }
+  .assign-sel { border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 10px; font-family: 'DM Sans', sans-serif; font-size: .82rem; background: var(--cream); cursor: pointer; outline: none; max-width: 150px; }
+  .assign-sel:focus { border-color: var(--amber); }
+
+  /* ── ACTION BUTTONS ── */
+  .act-btn { border: none; border-radius: 6px; padding: 5px 11px; font-family: 'DM Sans', sans-serif; font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .act-del  { background: #fee2e2; color: #991b1b; }
+  .act-del:hover  { background: var(--red); color: #fff; }
+
+  /* ── SEARCH/FILTER ── */
+  .tbl-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .search-box { border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; font-family: 'DM Sans', sans-serif; font-size: .85rem; outline: none; width: 200px; }
+  .search-box:focus { border-color: var(--amber); }
+  .filter-sel { border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; font-family: 'DM Sans', sans-serif; font-size: .83rem; background: #fff; cursor: pointer; outline: none; }
+  .filter-sel:focus { border-color: var(--amber); }
+
+  /* ── EMPTY / LOADING ── */
+  .tbl-empty { text-align: center; padding: 48px; color: var(--muted); }
+  .tbl-loading { text-align: center; padding: 40px; color: var(--muted); }
+
+  /* ── VOLUNTEERS TABLE ── */
+  #panel-volunteers { display: none; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 900px) {
+    th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+  @media(max-width: 680px) {
+    thead { display: none; }
+    tr { display: block; border-bottom: 1.5px solid var(--border); padding: 10px 0; }
+    td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 6px 14px; font-size: .82rem; }
+    td::before { content: attr(data-label); color: var(--muted); font-weight: 700; font-size: .72rem; text-transform: uppercase; flex-shrink: 0; min-width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="nav-logo">🐾 Paw<span>Alert</span> <span style="font-size:.7rem;font-family:'DM Sans',sans-serif;background:var(--amber);color:#fff;border-radius:4px;padding:2px 8px;margin-left:4px;font-weight:700">ADMIN</span></div>
+  <div class="nav-links">
+    <a onclick="showPanel('reports')"    data-panel="reports"    class="active">Reports</a>
+    <a onclick="showPanel('volunteers')" data-panel="volunteers">Volunteers</a>
+    <a onclick="showPanel('users')"      data-panel="users">Users</a>
+  </div>
+  <div class="nav-right">
+    <div class="user-chip">
+      <div class="av">A</div>
+      <span id="nav-admin">Admin</span>
+    </div>
+    <button class="nav-logout" onclick="logout()">Logout</button>
+  </div>
+  <button class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="showPanel('reports');closeMenu()"    data-panel="reports">📋 Reports</a>
+  <a onclick="showPanel('volunteers');closeMenu()" data-panel="volunteers">🙋 Volunteers</a>
+  <a onclick="showPanel('users');closeMenu()"      data-panel="users">👥 Users</a>
+  <a onclick="logout()" style="color:var(--red)">⏻ Logout</a>
+</div>
+
+<!-- ═══ ADMIN BODY ═══ -->
+<div class="admin-body">
+  <div class="admin-header">
+    <div>
+      <h1>Admin Panel</h1>
+      <div class="sub" id="admin-sub">Manage rescue requests, volunteers, and statuses.</div>
+    </div>
+    <button class="refresh-btn" onclick="loadAll()">🔄 Refresh Data</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card" onclick="jumpToReportFilter('')"><div class="label">Total Reports</div><div class="value total"    id="st-total">—</div></div>
+    <div class="stat-card" onclick="jumpToReportFilter('Pending')"><div class="label">Pending</div>      <div class="value pending"  id="st-pending">—</div></div>
+    <div class="stat-card" onclick="jumpToReportFilter('In Progress')"><div class="label">In Progress</div>  <div class="value progress" id="st-progress">—</div></div>
+    <div class="stat-card" onclick="jumpToReportFilter('Resolved')"><div class="label">Resolved</div>     <div class="value resolved" id="st-resolved">—</div></div>
+    <div class="stat-card" onclick="showPanel('volunteers')"><div class="label">Volunteers</div>   <div class="value vols"     id="st-vols">—</div></div>
+    <div class="stat-card" onclick="showPanel('users')"><div class="label">Users</div>        <div class="value users"    id="st-users">—</div></div>
+  </div>
+
+  <!-- Panel Tabs -->
+  <div class="panel-tabs">
+    <button class="ptab active" id="tab-reports"    onclick="showPanel('reports')">📋 Reports</button>
+    <button class="ptab"        id="tab-volunteers" onclick="showPanel('volunteers')">🙋 Volunteers</button>
+    <button class="ptab"        id="tab-users"      onclick="showPanel('users')">👥 Users</button>
+  </div>
+
+  <!-- ═════════ REPORTS PANEL ═════════ -->
+  <div id="panel-reports">
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <h3>Rescue Reports</h3>
+          <span class="tbl-count" id="reports-count">0</span>
+        </div>
+        <div class="tbl-filters">
+          <input class="search-box" type="text" id="rpt-search" placeholder="Search location, reporter…" oninput="renderReports()">
+          <select class="filter-sel" id="rpt-status-filter" onchange="renderReports()">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+          <button class="refresh-btn" onclick="exportReportsCSV()">⬇ CSV</button>
+          <button class="refresh-btn" onclick="exportReportsPDF()">⬇ PDF</button>
+        </div>
+      </div>
+      <div id="reports-tbl-wrap">
+        <div class="tbl-loading">⏳ Loading reports…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ VOLUNTEERS PANEL ═════════ -->
+  <div id="panel-volunteers">
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <h3>Registered Volunteers</h3>
+          <span class="tbl-count" id="vols-count">0</span>
+        </div>
+        <div class="tbl-filters">
+          <input class="search-box" type="text" id="vol-search" placeholder="Search name, area…" oninput="renderVolunteers()">
+          <button class="refresh-btn" onclick="exportVolunteersCSV()">⬇ CSV</button>
+          <button class="refresh-btn" onclick="exportVolunteersPDF()">⬇ PDF</button>
+        </div>
+      </div>
+      <div id="vols-tbl-wrap">
+        <div class="tbl-loading">⏳ Loading volunteers…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════ USERS PANEL ═════════ -->
+  <div id="panel-users" style="display:none">
+    <div class="tbl-wrap">
+      <div class="tbl-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <h3>Registered Users</h3>
+          <span class="tbl-count" id="users-count">0</span>
+        </div>
+        <div class="tbl-filters">
+          <input class="search-box" type="text" id="user-search" placeholder="Search name, phone…" oninput="renderUsers()">
+          <button class="refresh-btn" onclick="exportUsersCSV()">⬇ CSV</button>
+          <button class="refresh-btn" onclick="exportUsersPDF()">⬇ PDF</button>
+        </div>
+      </div>
+      <div id="users-tbl-wrap">
+        <div class="tbl-loading">⏳ Loading users…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+const API = 'http://localhost:5000/api';
+
+/* ── AUTH GUARD ── */
+const adminToken = localStorage.getItem('pawAdminToken');
+if (!adminToken) window.location.href = 'admin-login.html';
+document.getElementById('nav-admin').textContent = localStorage.getItem('pawAdminUser') || 'Admin';
+
+function adminHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken };
+}
+
+/* ── NAV ── */
+function toggleMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+function closeMenu()  { document.getElementById('mobileMenu').classList.remove('open'); }
+function logout() {
+  localStorage.removeItem('pawAdminToken');
+  localStorage.removeItem('pawAdminUser');
+  window.location.href = 'admin-login.html';
+}
+function showPanel(p) {
+  document.getElementById('panel-reports').style.display    = p==='reports'    ? 'block' : 'none';
+  document.getElementById('panel-volunteers').style.display = p==='volunteers' ? 'block' : 'none';
+  document.getElementById('panel-users').style.display      = p==='users'      ? 'block' : 'none';
+  document.querySelectorAll('[data-panel]').forEach(a => a.classList.toggle('active', a.dataset.panel===p));
+  document.querySelectorAll('.ptab').forEach(b => b.classList.toggle('active', b.id==='tab-'+p));
+}
+
+function jumpToReportFilter(status) {
+  showPanel('reports');
+  document.getElementById('rpt-status-filter').value = status;
+  renderReports();
+}
+
+/* ── TOAST ── */
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show '+(type||'');
+  setTimeout(() => t.className = '', 3000);
+}
+
+/* ── DATA CACHE ── */
+let allReports = [], allVols = [], allUsers = [];
+
+/* ── LOAD ALL DATA ── */
+async function loadAll() {
+  await Promise.all([loadStats(), loadReports(), loadVolunteers(), loadUsers()]);
+}
+
+async function loadStats() {
+  try {
+    const res  = await fetch(API+'/admin/stats', {headers: adminHeaders()});
+    if (res.status === 401) { logout(); return; }
+    const data = await res.json();
+    document.getElementById('st-total').textContent    = data.total_reports ?? '—';
+    document.getElementById('st-pending').textContent  = data.pending ?? '—';
+    document.getElementById('st-progress').textContent = data.in_progress ?? '—';
+    document.getElementById('st-resolved').textContent = data.resolved ?? '—';
+    document.getElementById('st-vols').textContent     = data.volunteers ?? '—';
+    document.getElementById('st-users').textContent    = data.users ?? '—';
+    document.getElementById('admin-sub').textContent   =
+      `Last refreshed: ${new Date().toLocaleTimeString()} — ${data.total_reports} total reports`;
+  } catch { showToast('❌ Cannot load stats','error'); }
+}
+
+async function loadReports() {
+  try {
+    allReports = await fetch(API+'/reports', {headers: adminHeaders()}).then(r=>r.json());
+    renderReports();
+  } catch {
+    document.getElementById('reports-tbl-wrap').innerHTML =
+      '<div class="tbl-empty">❌ Failed to load reports. Backend running?</div>';
+  }
+}
+
+async function loadVolunteers() {
+  try {
+    allVols = await fetch(API+'/volunteers', {headers: adminHeaders()}).then(r=>r.json());
+    renderVolunteers();
+  } catch {
+    document.getElementById('vols-tbl-wrap').innerHTML =
+      '<div class="tbl-empty">❌ Failed to load volunteers.</div>';
+  }
+}
+
+async function loadUsers() {
+  try {
+    allUsers = await fetch(API+'/users', {headers: adminHeaders()}).then(r=>r.json());
+    renderUsers();
+  } catch {
+    document.getElementById('users-tbl-wrap').innerHTML =
+      '<div class="tbl-empty">❌ Failed to load users.</div>';
+  }
+}
+
+/* ── RENDER REPORTS TABLE ── */
+function renderReports() {
+  const q   = (document.getElementById('rpt-search')?.value||'').toLowerCase();
+  const sf  = document.getElementById('rpt-status-filter')?.value || '';
+  const rows = allReports.filter(r => {
+    const matchQ  = !q  || r.location?.toLowerCase().includes(q) || r.reporter?.toLowerCase().includes(q) || r.desc?.toLowerCase().includes(q) || r.animal?.toLowerCase().includes(q);
+    const matchSf = !sf || r.status === sf;
+    return matchQ && matchSf;
+  });
+  document.getElementById('reports-count').textContent = rows.length;
+
+  if (!rows.length) {
+    document.getElementById('reports-tbl-wrap').innerHTML = '<div class="tbl-empty">🐾 No reports match the current filter.</div>';
+    return;
+  }
+
+  const volOptions = allVols.map(v =>
+    `<option value="${v.name}">${v.name} (${v.help_type})</option>`
+  ).join('');
+
+  const tbody = rows.map(r => {
+    const cls   = r.status==='Pending'?'pending':r.status==='In Progress'?'progress':'resolved';
+    const thumb = r.photo
+      ? `<div class="case-thumb"><img src="${r.photo}" alt="${r.animal}" onerror="this.parentElement.textContent='${r.emoji||'🐾'}'"></div>`
+      : `<div class="case-thumb">${r.emoji||'🐾'}</div>`;
+    return `
+      <tr>
+        <td data-label="Case">${thumb} &nbsp;${r.case_id||r._id?.slice(-4)||'—'}</td>
+        <td data-label="Animal">${r.emoji||''} ${r.animal}</td>
+        <td data-label="Location" style="max-width:160px;white-space:normal">${r.location}</td>
+        <td data-label="Reporter">${r.reporter}<br><span style="font-size:.75rem;color:var(--muted)">${r.phone}</span></td>
+        <td data-label="Issue" style="max-width:200px;white-space:normal">${(r.desc||'').slice(0,80)}${r.desc?.length>80?'…':''}</td>
+        <td data-label="Assign">
+          <select class="assign-sel" onchange="assignVolunteer('${r._id}','${r.status}',this.value)">
+            <option value="">— Assign —</option>
+            ${volOptions}
+            ${r.assigned ? `<option value="${r.assigned}" selected>${r.assigned}</option>` : ''}
+          </select>
+        </td>
+        <td data-label="Status">
+          <select class="status-sel ${cls}" onchange="changeStatus('${r._id}',this)">
+            <option ${r.status==='Pending'   ?'selected':''}>Pending</option>
+            <option ${r.status==='In Progress'?'selected':''}>In Progress</option>
+            <option ${r.status==='Resolved'  ?'selected':''}>Resolved</option>
+          </select>
+        </td>
+        <td data-label="Date" style="white-space:nowrap;font-size:.78rem;color:var(--muted)">${r.created_at||''}</td>
+        <td data-label="Action">
+          <button class="act-btn act-del" onclick="deleteReport('${r._id}')">🗑 Delete</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('reports-tbl-wrap').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Case</th><th>Animal</th><th>Location</th><th>Reporter</th>
+          <th>Issue</th><th>Assign Volunteer</th><th>Status</th><th>Date</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+/* ── RENDER VOLUNTEERS TABLE ── */
+function renderVolunteers() {
+  const q = (document.getElementById('vol-search')?.value||'').toLowerCase();
+  const rows = allVols.filter(v =>
+    !q || v.name?.toLowerCase().includes(q) || v.area?.toLowerCase().includes(q)
+       || v.help_type?.toLowerCase().includes(q)
+  );
+  document.getElementById('vols-count').textContent = rows.length;
+
+  if (!rows.length) {
+    document.getElementById('vols-tbl-wrap').innerHTML = '<div class="tbl-empty">🙋 No volunteers registered yet.</div>';
+    return;
+  }
+
+  const typeBadge = {'Rescue':'#fef3c7;color:#92400e','Medical':'#e0f2fe;color:#0369a1','Food':'#dcfce7;color:#166534'};
+  const tbody = rows.map(v => `
+    <tr>
+      <td data-label="Name"><strong>${v.name}</strong></td>
+      <td data-label="Phone">${v.phone}</td>
+      <td data-label="Area">📍 ${v.area}</td>
+      <td data-label="Help Type">
+        <span style="background:${typeBadge[v.help_type]||'var(--cream);color:var(--ink)'};padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700">
+          ${v.help_type}
+        </span>
+      </td>
+      <td data-label="Email">${v.email||'—'}</td>
+      <td data-label="Registered" style="font-size:.78rem;color:var(--muted)">${v.created_at||''}</td>
+      <td data-label="Action">
+        <button class="act-btn act-del" onclick="deleteVolunteer('${v._id}')">🗑 Remove</button>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('vols-tbl-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Phone</th><th>Area</th><th>Help Type</th><th>Email</th><th>Registered</th><th>Action</th>
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+/* ── RENDER USERS TABLE ── */
+function renderUsers() {
+  const q = (document.getElementById('user-search')?.value||'').toLowerCase();
+  const rows = allUsers.filter(u =>
+    !q || u.name?.toLowerCase().includes(q) || u.phone?.includes(q) || u.email?.toLowerCase().includes(q)
+  );
+  document.getElementById('users-count').textContent = rows.length;
+
+  if (!rows.length) {
+    document.getElementById('users-tbl-wrap').innerHTML = '<div class="tbl-empty">👥 No users found.</div>';
+    return;
+  }
+
+  const tbody = rows.map(u => `
+    <tr>
+      <td data-label="Name"><strong>${u.name}</strong></td>
+      <td data-label="Phone">${u.phone}</td>
+      <td data-label="Email">${u.email||'—'}</td>
+      <td data-label="Registered" style="font-size:.78rem;color:var(--muted)">${u.created_at||''}</td>
+    </tr>`).join('');
+
+  document.getElementById('users-tbl-wrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Phone</th><th>Email</th><th>Registered</th>
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+}
+
+/* ── ASSIGN VOLUNTEER ── */
+async function assignVolunteer(id, currentStatus, volName) {
+  if (!volName) return;
+  const newStatus = currentStatus === 'Pending' ? 'In Progress' : currentStatus;
+  try {
+    const res = await fetch(`${API}/reports/${id}`, {
+      method:'PUT', headers: adminHeaders(),
+      body: JSON.stringify({assigned: volName, status: newStatus})
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast('❌ '+json.error,'error'); return; }
+    showToast(`✅ ${volName} assigned!`, 'success');
+    await loadAll();
+  } catch { showToast('❌ Server error','error'); }
+}
+
+/* ── CHANGE STATUS ── */
+async function changeStatus(id, sel) {
+  const newStatus = sel.value;
+  try {
+    const res  = await fetch(`${API}/reports/${id}`, {
+      method:'PUT', headers: adminHeaders(),
+      body: JSON.stringify({status: newStatus})
+    });
+    const json = await res.json();
+    if (!res.ok) { showToast('❌ '+json.error,'error'); return; }
+    const cls = newStatus==='Pending'?'pending':newStatus==='In Progress'?'progress':'resolved';
+    sel.className = 'status-sel '+cls;
+    showToast(`✅ Status → ${newStatus}`, 'success');
+    // Update local cache without full reload
+    const idx = allReports.findIndex(r => r._id === id);
+    if (idx > -1) allReports[idx].status = newStatus;
+    await loadStats();
+  } catch { showToast('❌ Server error','error'); }
+}
+
+/* ── DELETE REPORT ── */
+async function deleteReport(id) {
+  if (!confirm('⚠️ Delete this report permanently? This cannot be undone.')) return;
+  try {
+    const res  = await fetch(`${API}/reports/${id}`, {method:'DELETE', headers: adminHeaders()});
+    const json = await res.json();
+    if (!res.ok) { showToast('❌ '+json.error,'error'); return; }
+    showToast('🗑️ Report deleted','info');
+    allReports = allReports.filter(r => r._id !== id);
+    renderReports();
+    await loadStats();
+  } catch { showToast('❌ Server error','error'); }
+}
+
+/* ── DELETE VOLUNTEER ── */
+async function deleteVolunteer(id) {
+  if (!confirm('Remove this volunteer from the platform?')) return;
+  try {
+    const res  = await fetch(`${API}/volunteers/${id}`, {method:'DELETE', headers: adminHeaders()});
+    const json = await res.json();
+    if (!res.ok) { showToast('❌ '+json.error,'error'); return; }
+    showToast('🗑️ Volunteer removed','info');
+    allVols = allVols.filter(v => v._id !== id);
+    renderVolunteers();
+    await loadStats();
+  } catch { showToast('❌ Server error','error'); }
+}
+
+/* ── EXPORT HELPER (CSV) ── */
+function applyCSV(data, filename) {
+  const csvContent = "data:text/csv;charset=utf-8," + data.map(e => e.join(",")).join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function exportReportsCSV() {
+  const rows = [["Status", "Animal", "Reporter Name", "Phone", "Location", "Problem", "Assigned", "Date"]];
+  const q = (document.getElementById('rpt-search')?.value||'').toLowerCase();
+  const f = document.getElementById('rpt-status-filter')?.value||'';
+  const filtered = allReports.filter(r => {
+    const matchQ = !q || r.name?.toLowerCase().includes(q) || r.location?.toLowerCase().includes(q);
+    const matchF = !f || r.status === f;
+    return matchQ && matchF;
+  });
+  filtered.forEach(r => rows.push([r.status, r.animal, r.name, r.phone, `"${r.location}"`, `"${r.description}"`, r.assigned||'Unassigned', r.created_at||'']));
+  applyCSV(rows, "pawalert_reports.csv");
+}
+
+function exportVolunteersCSV() {
+  const rows = [["Name", "Phone", "Area", "Help Type", "Email", "Registered"]];
+  allVols.forEach(v => rows.push([v.name, v.phone, `"${v.area}"`, v.help_type, v.email||'', v.created_at||'']));
+  applyCSV(rows, "pawalert_volunteers.csv");
+}
+function exportUsersCSV() {
+  const rows = [["Name", "Phone", "Email", "Registered"]];
+  allUsers.forEach(u => rows.push([u.name, u.phone, u.email||'', u.created_at||'']));
+  applyCSV(rows, "pawalert_users.csv");
+}
+
+/* ── EXPORT HELPER (PDF) ── */
+function exportReportsPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('landscape');
+  doc.text("Rescue Reports", 14, 15);
+  const q = (document.getElementById('rpt-search')?.value||'').toLowerCase();
+  const f = document.getElementById('rpt-status-filter')?.value||'';
+  const filtered = allReports.filter(r => {
+    const matchQ = !q || r.name?.toLowerCase().includes(q) || r.location?.toLowerCase().includes(q);
+    const matchF = !f || r.status === f;
+    return matchQ && matchF;
+  });
+  const rows = filtered.map(r => [r.status, r.animal, r.name, r.phone, r.location, r.assigned||'Unassigned']);
+  doc.autoTable({
+    startY: 20,
+    head: [['Status', 'Animal', 'Reporter Name', 'Phone', 'Location', 'Assigned']],
+    body: rows,
+  });
+  doc.save("pawalert_reports.pdf");
+}
+
+function exportVolunteersPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.text("Registered Volunteers", 14, 15);
+  const rows = allVols.map(v => [v.name, v.phone, v.area, v.help_type, v.email||'']);
+  doc.autoTable({
+    startY: 20,
+    head: [['Name', 'Phone', 'Area', 'Help Type', 'Email']],
+    body: rows,
+  });
+  doc.save("pawalert_volunteers.pdf");
+}
+function exportUsersPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.text("Registered Users", 14, 15);
+  const rows = allUsers.map(u => [u.name, u.phone, u.email||'', u.created_at||'']);
+  doc.autoTable({
+    startY: 20,
+    head: [['Name', 'Phone', 'Email', 'Registered']],
+    body: rows,
+  });
+  doc.save("pawalert_users.pdf");
+}
+
+/* ── INIT ── */
+loadAll();
+</script>
+</body>
+</html>

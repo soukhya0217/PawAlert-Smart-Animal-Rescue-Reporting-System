@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawAlert — Login / Register</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { background: var(--cream); display: flex; min-height: 100vh; }
+
+  /* ── SPLIT LAYOUT ── */
+  .left-panel {
+    width: 42%; background: linear-gradient(160deg, var(--amber-dk) 0%, #7A3510 100%);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 48px 44px; color: #fff; position: relative; overflow: hidden;
+  }
+  .left-panel::before {
+    content: '🐾'; position: absolute; font-size: 22rem; opacity: .06;
+    right: -60px; bottom: -40px; pointer-events: none;
+  }
+  .brand { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; }
+  .brand span { color: var(--amber-lt); }
+  .brand-tagline { font-size: .9rem; opacity: .8; margin-top: 6px; }
+  .left-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+  .left-title { font-family: 'Playfair Display', serif; font-size: 2.1rem; line-height: 1.2; }
+  .left-desc  { font-size: .93rem; opacity: .85; line-height: 1.7; }
+  .left-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+  .l-stat { }
+  .l-stat .num   { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; }
+  .l-stat .label { font-size: .75rem; opacity: .75; text-transform: uppercase; letter-spacing: .07em; }
+  .left-footer { font-size: .78rem; opacity: .55; }
+  .helpline-strip { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .hl-item { background: rgba(255,255,255,.12); border-radius: 8px; padding: 10px 14px; font-size: .82rem; }
+  .hl-item strong { display: block; font-size: .88rem; }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 40px 5vw;
+  }
+  .auth-card { width: 100%; max-width: 420px; }
+  .auth-card h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 4px; }
+  .auth-card .sub { color: var(--muted); font-size: .88rem; margin-bottom: 28px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 4px; margin-bottom: 28px; }
+  .tab-btn {
+    flex: 1; padding: 9px; border: none; border-radius: 6px; background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all .2s;
+  }
+  .tab-btn.active { background: #fff; color: var(--amber-dk); box-shadow: var(--shadow); }
+
+  /* ── PHONE WRAPPER ── */
+  .phone-wrap { display: flex; gap: 0; }
+  .phone-pre {
+    background: var(--border); border: 1.5px solid var(--border); border-right: none;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    padding: 11px 12px; font-size: .88rem; font-weight: 600; color: var(--ink-lt);
+    white-space: nowrap; display: flex; align-items: center;
+  }
+  .phone-wrap input {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+    flex: 1;
+  }
+  .phone-counter { font-size: .72rem; color: var(--muted); text-align: right; margin-top: 3px; }
+  .phone-counter.full { color: var(--green); font-weight: 600; }
+  .phone-counter.over { color: var(--red); font-weight: 600; }
+
+  /* ── PASSWORD WRAPPER ── */
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 44px !important; }
+  .pw-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--muted);
+    padding: 2px;
+  }
+  .pw-strength { height: 3px; border-radius: 999px; background: var(--border); margin-top: 6px; overflow: hidden; }
+  .pw-strength-bar { height: 100%; border-radius: 999px; transition: all .3s; width: 0; }
+
+  .divider { text-align: center; margin: 18px 0; position: relative; }
+  .divider::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border); }
+  .divider span { background: var(--cream); padding: 0 12px; font-size: .78rem; color: var(--muted); position: relative; }
+
+  .admin-link { text-align: center; margin-top: 20px; font-size: .84rem; color: var(--muted); }
+  .admin-link a { color: var(--teal); font-weight: 600; text-decoration: none; cursor: pointer; }
+  .admin-link a:hover { text-decoration: underline; }
+
+  @media(max-width: 768px) {
+    body { flex-direction: column; }
+    .left-panel { width: 100%; padding: 28px 5vw 24px; min-height: auto; }
+    .left-panel::before { display: none; }
+    .left-body { gap: 12px; margin: 16px 0; }
+    .left-title { font-size: 1.4rem; }
+    .helpline-strip { display: none; }
+    .left-footer { display: none; }
+    .right-panel { padding: 28px 5vw 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ LEFT PANEL ═══ -->
+<div class="left-panel">
+  <div>
+    <div class="brand">🐾 Paw<span>Alert</span></div>
+    <div class="brand-tagline">Street Animal Help Platform</div>
+  </div>
+  <div class="left-body">
+    <div class="left-title">Every street animal deserves a chance to be safe.</div>
+    <div class="left-desc">Report injured or abandoned animals in seconds. We connect you with nearby volunteers, NGOs, and veterinarians — instantly.</div>
+    <div class="left-stats">
+      <div class="l-stat"><div class="num" id="ls-reports">—</div><div class="label">Reports Filed</div></div>
+      <div class="l-stat"><div class="num" id="ls-resolved">—</div><div class="label">Resolved</div></div>
+      <div class="l-stat"><div class="num" id="ls-vols">—</div><div class="label">Volunteers</div></div>
+    </div>
+    <div class="helpline-strip">
+      <div style="font-size:.75rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em">🆘 Emergency Helplines</div>
+      <div class="hl-item"><strong>Animal Welfare Board (All India)</strong>1800-180-5236</div>
+      <div class="hl-item"><strong>CUPA — Bengaluru</strong>+91 98450 99817</div>
+      <div class="hl-item"><strong>Blue Cross — Chennai</strong>+91 44 2235 1001</div>
+    </div>
+  </div>
+  <div class="left-footer">© 2025 PawAlert — Building compassion one rescue at a time.</div>
+</div>
+
+<!-- ═══ RIGHT PANEL ═══ -->
+<div class="right-panel">
+  <div class="auth-card">
+    <h2>Welcome to PawAlert</h2>
+    <p class="sub">Sign in to your account or create a new one to start helping.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">🔑 Login</button>
+      <button class="tab-btn"        id="tab-reg"   onclick="switchTab('register')">✨ Register</button>
+    </div>
+
+    <!-- ── LOGIN FORM ── -->
+    <div id="form-login">
+      <div class="alert alert-error" id="login-err">
+        <span class="alert-icon">⚠️</span><span id="login-err-msg"></span>
+      </div>
+      <div class="form-group">
+        <label>Phone Number <span class="req">*</span></label>
+        <div class="phone-wrap">
+          <div class="phone-pre">🇮🇳 +91</div>
+          <input type="tel" id="l-phone" placeholder="10-digit mobile number"
+            maxlength="10" inputmode="numeric"
+            oninput="onPhoneInput(this,'l-phone-cnt')"
+            onkeypress="return onlyNum(event)">
+        </div>
+        <div class="phone-counter" id="l-phone-cnt">0 / 10 digits</div>
+        <div class="field-err" id="l-phone-err">Enter exactly 10 digits</div>
+      </div>
+      <div class="form-group">
+        <label>Password <span class="req">*</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="l-pass" placeholder="Your password"
+            onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="pw-toggle" onclick="togglePw('l-pass',this)" type="button">👁</button>
+        </div>
+        <div class="field-err" id="l-pass-err">Password is required</div>
+      </div>
+      <div style="text-align: right; margin-top: -12px; margin-bottom: 20px;">
+        <a href="#" onclick="switchTab('forgot'); return false;" style="font-size: .8rem; color: var(--teal); text-decoration: none; font-weight: 600;">Forgot Password?</a>
+      </div>
+      <button class="btn btn-primary btn-block" id="login-btn" onclick="doLogin()">
+        Login
+      </button>
+    </div>
+
+    <!-- ── REGISTER FORM ── -->
+    <div id="form-register" style="display:none">
+      <div class="alert alert-error" id="reg-err">
+        <span class="alert-icon">⚠️</span><span id="reg-err-msg"></span>
+      </div>
+      <div class="alert alert-success" id="reg-ok">
+        <span class="alert-icon">✅</span><span id="reg-ok-msg"></span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="r-name" placeholder="Your full name">
+          <div class="field-err" id="r-name-err">Name is required</div>
+        </div>
+        <div class="form-group">
+          <label>Email <span class="req">*</span></label>
+          <input type="email" id="r-email" placeholder="you@email.com">
+          <div class="field-err" id="r-email-err">Valid email required</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Phone Number <span class="req">*</span></label>
+        <div class="phone-wrap">
+          <div class="phone-pre">🇮🇳 +91</div>
+          <input type="tel" id="r-phone" placeholder="10-digit mobile number"
+            maxlength="10" inputmode="numeric"
+            oninput="onPhoneInput(this,'r-phone-cnt')"
+            onkeypress="return onlyNum(event)">
+        </div>
+        <div class="phone-counter" id="r-phone-cnt">0 / 10 digits</div>
+        <div class="field-err" id="r-phone-err">Enter exactly 10 digits</div>
+      </div>
+      <div class="form-group">
+        <label>Password <span class="req">*</span> <span style="font-weight:400;color:var(--muted)">(min. 6 characters)</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="r-pass" placeholder="Create a strong password"
+            oninput="checkPwStrength(this)">
+          <button class="pw-toggle" onclick="togglePw('r-pass',this)" type="button">👁</button>
+        </div>
+        <div class="pw-strength"><div class="pw-strength-bar" id="r-pw-bar"></div></div>
+        <div class="field-err" id="r-pass-err">Minimum 6 characters</div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password <span class="req">*</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="r-cpass" placeholder="Re-enter your password">
+          <button class="pw-toggle" onclick="togglePw('r-cpass',this)" type="button">👁</button>
+        </div>
+        <div class="field-err" id="r-cpass-err">Passwords do not match</div>
+      </div>
+      <button class="btn btn-teal btn-block" id="reg-btn" onclick="doRegister()">
+        Create Account
+      </button>
+    </div>
+
+    <!-- ── FORGOT PASSWORD FORM ── -->
+    <div id="form-forgot" style="display:none">
+      <div class="alert alert-error" id="forgot-err"><span class="alert-icon">⚠️</span><span id="forgot-err-msg"></span></div>
+      <div class="alert alert-success" id="forgot-ok"><span class="alert-icon">✅</span><span id="forgot-ok-msg"></span></div>
+      
+      <p style="font-size: .9rem; color: var(--muted); margin-bottom: 16px;">Enter your phone number and a new password to instantly reset your account access.</p>
+      
+      <div class="form-group">
+        <label>Phone Number <span class="req">*</span></label>
+        <div class="phone-wrap">
+          <div class="phone-pre">🇮🇳 +91</div>
+          <input type="tel" id="f-phone" placeholder="10-digit mobile number"
+            maxlength="10" inputmode="numeric"
+            oninput="onPhoneInput(this,'f-phone-cnt')"
+            onkeypress="return onlyNum(event)">
+        </div>
+        <div class="phone-counter" id="f-phone-cnt">0 / 10 digits</div>
+        <div class="field-err" id="f-phone-err">Enter exactly 10 digits</div>
+      </div>
+
+      <div class="form-group">
+        <label>New Password <span class="req">*</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="f-pass" placeholder="Enter new password">
+          <button class="pw-toggle" onclick="togglePw('f-pass',this)" type="button">👁</button>
+        </div>
+        <div class="field-err" id="f-pass-err">Minimum 6 characters</div>
+      </div>
+      <button class="btn btn-teal btn-block" id="reset-btn" onclick="doResetPassword()">
+        Reset Password
+      </button>
+      
+      <div style="text-align: center; margin-top: 16px;">
+        <a href="#" onclick="switchTab('login'); return false;" style="font-size: .85rem; color: var(--muted); text-decoration: none;">← Back to Login</a>
+      </div>
+    </div>
+
+    <div class="divider"><span>or</span></div>
+    <div class="admin-link">
+      Are you an admin? <a href="admin-login.html">Admin Login →</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:5000/api';
+
+/* redirect if already logged in */
+if (localStorage.getItem('pawToken')) window.location.href = 'index.html';
+
+/* ── Load live stats ── */
+async function loadStats() {
+  try {
+    const [reps, vols] = await Promise.all([
+      fetch(API+'/reports').then(r=>r.json()),
+      fetch(API+'/volunteers').then(r=>r.json())
+    ]);
+    document.getElementById('ls-reports').textContent = reps.length;
+    document.getElementById('ls-resolved').textContent = reps.filter(r=>r.status==='Resolved').length;
+    document.getElementById('ls-vols').textContent = vols.length;
+  } catch { /* backend not running yet */ }
+}
+loadStats();
+
+/* ── TAB SWITCH ── */
+function switchTab(t) {
+  document.getElementById('form-login').style.display    = t==='login'    ? 'block' : 'none';
+  document.getElementById('form-register').style.display = t==='register' ? 'block' : 'none';
+  document.getElementById('form-forgot').style.display   = t==='forgot'   ? 'block' : 'none';
+  
+  const tabsEl = document.querySelector('.tabs');
+  if (tabsEl) {
+    tabsEl.style.display = t==='forgot' ? 'none' : 'flex';
+  }
+  
+  if (t !== 'forgot') {
+    document.getElementById('tab-login').classList.toggle('active', t==='login');
+    document.getElementById('tab-reg').classList.toggle('active', t==='register');
+  }
+  clearAlerts();
+}
+
+/* ── PHONE INPUT ── */
+function onlyNum(e) {
+  if (!/^\d$/.test(e.key) && !['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) {
+    e.preventDefault(); return false;
+  }
+  return true;
+}
+function onPhoneInput(inp, cntId) {
+  inp.value = inp.value.replace(/\D/g,'').slice(0,10);
+  const len = inp.value.length;
+  const el  = document.getElementById(cntId);
+  el.textContent = `${len} / 10 digits`;
+  el.className   = 'phone-counter' + (len===10 ? ' full' : len>10 ? ' over' : '');
+}
+
+/* ── PASSWORD TOGGLE ── */
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const vis = inp.type === 'text';
+  inp.type  = vis ? 'password' : 'text';
+  btn.textContent = vis ? '👁' : '🙈';
+}
+
+/* ── PW STRENGTH ── */
+function checkPwStrength(inp) {
+  const pw  = inp.value;
+  const bar = document.getElementById('r-pw-bar');
+  let score = 0;
+  if (pw.length >= 6)  score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const pct = (score/5)*100;
+  const clr = score<=1 ? '#ef4444' : score<=2 ? '#f97316' : score<=3 ? '#eab308' : '#22c55e';
+  bar.style.width = pct+'%';
+  bar.style.background = clr;
+}
+
+/* ── FIELD ERROR HELPERS ── */
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+  document.getElementById(id.replace('-err','')) &&
+    document.getElementById(id.replace('-err','')).classList.add('err');
+}
+function clearFieldErr(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('show'); }
+  const inp = document.getElementById(id.replace('-err',''));
+  if (inp) inp.classList.remove('err');
+}
+function clearAlerts() {
+  ['login-err','reg-err','reg-ok','forgot-err','forgot-ok'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('show');
+  });
+}
+function showAlert(id, msg) {
+  const el = document.getElementById(id);
+  el.classList.add('show');
+  document.getElementById(id+'-msg').textContent = msg;
+}
+
+/* ── LOADING STATE ── */
+function setLoading(btnId, loading, text='') {
+  const btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span> Please wait…' : text;
+}
+
+/* ── LOGIN ── */
+async function doLogin() {
+  clearAlerts();
+  ['l-phone-err','l-pass-err'].forEach(clearFieldErr);
+
+  const phone = document.getElementById('l-phone').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  let ok = true;
+
+  if (!phone || phone.length !== 10) {
+    showErr('l-phone-err', 'Phone number must be exactly 10 digits'); ok = false;
+  }
+  if (!pass) {
+    showErr('l-pass-err', 'Password is required'); ok = false;
+  }
+  if (!ok) return;
+
+  setLoading('login-btn', true);
+  try {
+    const res  = await fetch(API+'/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({phone, password: pass})
+    });
+    const json = await res.json();
+    if (!res.ok) { showAlert('login-err', json.error || 'Login failed'); return; }
+    localStorage.setItem('pawToken', json.data.token);
+    localStorage.setItem('pawUser',  JSON.stringify({name: json.data.name, phone: json.data.phone}));
+    showToast('✅ Welcome back, '+json.data.name+'!', 'success');
+    setTimeout(() => window.location.href = 'index.html', 800);
+  } catch (e) {
+    showAlert('login-err', 'Cannot connect to server. Make sure the backend is running.');
+  } finally {
+    setLoading('login-btn', false, '🔑 Login');
+  }
+}
+
+/* ── REGISTER ── */
+async function doRegister() {
+  clearAlerts();
+  ['r-name-err','r-email-err','r-phone-err','r-pass-err','r-cpass-err'].forEach(clearFieldErr);
+
+  const name  = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const phone = document.getElementById('r-phone').value.trim();
+  const pass  = document.getElementById('r-pass').value;
+  const cpass = document.getElementById('r-cpass').value;
+  let ok = true;
+
+  if (!name)                            { showErr('r-name-err', 'Full name is required'); ok=false; }
+  if (!email || !email.includes('@'))   { showErr('r-email-err','Enter a valid email'); ok=false; }
+  if (!phone || phone.length !== 10)    { showErr('r-phone-err','Phone must be exactly 10 digits'); ok=false; }
+  if (pass.length < 6)                  { showErr('r-pass-err', 'Minimum 6 characters'); ok=false; }
+  if (pass !== cpass)                   { showErr('r-cpass-err','Passwords do not match'); ok=false; }
+  if (!ok) return;
+
+  setLoading('reg-btn', true);
+  try {
+    const res  = await fetch(API+'/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, email, phone, password: pass})
+    });
+    const json = await res.json();
+    if (!res.ok) { showAlert('reg-err', json.error || 'Registration failed'); return; }
+    localStorage.setItem('pawToken', json.data.token);
+    localStorage.setItem('pawUser',  JSON.stringify({name: json.data.name, phone: json.data.phone}));
+    showAlert('reg-ok', json.message || 'Account created!');
+    showToast('🎉 Welcome, '+json.data.name+'!', 'success');
+    setTimeout(() => window.location.href = 'index.html', 1000);
+  } catch {
+    showAlert('reg-err', 'Cannot connect to server. Make sure the backend is running.');
+  } finally {
+    setLoading('reg-btn', false, '✨ Create Account');
+  }
+}
+
+/* ── FORGOT PASSWORD ── */
+async function doResetPassword() {
+  clearAlerts();
+  ['f-phone-err','f-pass-err'].forEach(clearFieldErr);
+  
+  const phone = document.getElementById('f-phone').value.trim();
+  const pass  = document.getElementById('f-pass').value;
+  let ok = true;
+  
+  if (!phone || phone.length !== 10) { showErr('f-phone-err', 'Phone must be exactly 10 digits'); ok = false; }
+  if (pass.length < 6) { showErr('f-pass-err', 'Minimum 6 characters'); ok = false; }
+  if (!ok) return;
+  
+  setLoading('reset-btn', true);
+  try {
+    const res = await fetch(API+'/auth/reset-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({phone, new_password: pass})
+    });
+    const json = await res.json();
+    if (!res.ok) { showAlert('forgot-err', json.error); return; }
+    
+    showToast('✅ Password reset successfully! Please login.', 'success');
+    switchTab('login');
+    document.getElementById('f-phone').value = '';
+    document.getElementById('f-pass').value = '';
+    document.getElementById('f-phone-cnt').textContent = '0 / 10 digits';
+  } catch (e) {
+    showAlert('forgot-err', 'Cannot connect to server.');
+  } finally {
+    setLoading('reset-btn', false, 'Reset Password');
+  }
+}
+
+/* ── TOAST ── */
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + (type||'');
+  setTimeout(() => t.className = '', 3000);
+}
+</script>
+</body>
+</html>

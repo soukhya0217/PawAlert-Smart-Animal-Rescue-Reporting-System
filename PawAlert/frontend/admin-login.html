@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawAlert — Admin Login</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body {
+    background: linear-gradient(135deg, var(--ink) 0%, #2D1A0A 100%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  .admin-wrap { width: 100%; max-width: 420px; }
+  .admin-logo {
+    text-align: center; margin-bottom: 32px;
+  }
+  .admin-logo .icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+  .admin-logo h1 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: #fff; }
+  .admin-logo h1 span { color: var(--amber-lt); }
+  .admin-logo p { color: rgba(255,255,255,.55); font-size: .88rem; margin-top: 4px; }
+  .admin-card {
+    background: #fff; border-radius: 20px; padding: 36px 32px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.4);
+  }
+  .admin-card h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 4px; }
+  .admin-card .sub { color: var(--muted); font-size: .85rem; margin-bottom: 28px; }
+  .demo-hint {
+    background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: .8rem; color: var(--muted); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .demo-hint strong { color: var(--amber-dk); }
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 44px !important; }
+  .pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--muted); }
+  .back-link { text-align: center; margin-top: 20px; font-size: .84rem; }
+  .back-link a { color: rgba(255,255,255,.6); text-decoration: none; }
+  .back-link a:hover { color: var(--amber-lt); }
+  .security-badge {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    color: rgba(255,255,255,.4); font-size: .75rem; margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+
+<div class="admin-wrap">
+  <div class="admin-logo">
+    <span class="icon">🛡️</span>
+    <h1>Paw<span>Alert</span></h1>
+    <p>Secure Admin Portal</p>
+  </div>
+
+  <div class="admin-card">
+    <h2>Admin Login</h2>
+    <p class="sub">Sign in with your administrator credentials to manage rescue cases.</p>
+
+    <div class="demo-hint">
+      🔑 Demo credentials — username: <strong>admin</strong> &nbsp;|&nbsp; password: <strong>Admin@123</strong>
+    </div>
+
+    <div class="alert alert-error" id="a-err">
+      <span class="alert-icon">⚠️</span><span id="a-err-msg"></span>
+    </div>
+
+    <div class="form-group">
+      <label>Admin Username <span class="req">*</span></label>
+      <input type="text" id="a-user" placeholder="admin"
+        onkeydown="if(event.key==='Enter')document.getElementById('a-pass').focus()">
+      <div class="field-err" id="a-user-err">Username is required</div>
+    </div>
+
+    <div class="form-group">
+      <label>Password <span class="req">*</span></label>
+      <div class="pw-wrap">
+        <input type="password" id="a-pass" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter')doAdminLogin()">
+        <button class="pw-toggle" onclick="togglePw()" type="button">👁</button>
+      </div>
+      <div class="field-err" id="a-pass-err">Password is required</div>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="admin-login-btn" onclick="doAdminLogin()"
+      style="background:var(--ink);box-shadow:0 4px 16px rgba(28,18,8,.3);">
+      🔐 Access Admin Panel
+    </button>
+  </div>
+
+  <div class="back-link">
+    <a href="login.html">← Back to User Login</a>
+  </div>
+  <div class="security-badge">
+    🔒 Encrypted session &nbsp;·&nbsp; Auto-logout in 8 hours
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:5000/api';
+
+/* redirect if already admin-logged-in */
+if (localStorage.getItem('pawAdminToken')) window.location.href = 'admin.html';
+
+function togglePw() {
+  const inp = document.getElementById('a-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function showFieldErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+function clearFieldErr(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+async function doAdminLogin() {
+  clearFieldErr('a-user-err'); clearFieldErr('a-pass-err');
+  document.getElementById('a-err').classList.remove('show');
+
+  const username = document.getElementById('a-user').value.trim();
+  const password = document.getElementById('a-pass').value;
+
+  if (!username) { showFieldErr('a-user-err', 'Username is required'); return; }
+  if (!password) { showFieldErr('a-pass-err', 'Password is required'); return; }
+
+  const btn = document.getElementById('admin-login-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Authenticating…';
+
+  try {
+    const res  = await fetch(API+'/auth/admin-login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      document.getElementById('a-err').classList.add('show');
+      document.getElementById('a-err-msg').textContent = json.error || 'Login failed';
+      return;
+    }
+    localStorage.setItem('pawAdminToken', json.data.token);
+    localStorage.setItem('pawAdminUser',  json.data.username);
+    showToast('✅ Admin access granted!', 'success');
+    setTimeout(() => window.location.href = 'admin.html', 700);
+  } catch {
+    document.getElementById('a-err').classList.add('show');
+    document.getElementById('a-err-msg').textContent = 'Cannot connect to server. Is the backend running?';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔐 Access Admin Panel';
+  }
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 2500);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawAlert — Street Animal Help Platform</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  /* ── NAV ADDITIONS ── */
+  .nav-right { gap: 12px; }
+  .user-chip {
+    background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: 999px; padding: 5px 14px 5px 8px;
+    font-size: .82rem; font-weight: 600; color: var(--ink-lt);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .user-chip .av {
+    width: 24px; height: 24px; background: var(--amber);
+    border-radius: 50%; color: #fff; font-size: .7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 72px 5vw 56px; max-width: 1160px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center;
+  }
+  .hero-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem,4.5vw,3.4rem); line-height: 1.12;
+    color: var(--ink); margin-bottom: 18px;
+  }
+  .hero-text h1 em { font-style: normal; color: var(--amber); }
+  .hero-text p { color: var(--muted); font-size: 1rem; line-height: 1.72; max-width: 460px; margin-bottom: 32px; }
+  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-visual {
+    background: linear-gradient(135deg,#fff9f3 0%,#fdecd8 100%);
+    border-radius: 24px; padding: 36px; border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-lg); text-align: center;
+  }
+  .hero-paw { font-size: 4.5rem; margin-bottom: 16px; }
+  .hero-stats { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; }
+  .stat-item .num   { font-family:'Playfair Display',serif; font-size: 1.9rem; font-weight:700; color:var(--amber-dk); }
+  .stat-item .lbl   { font-size:.73rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+
+  /* ── STEPS ── */
+  .section { padding: 56px 5vw; max-width: 1160px; margin: 0 auto; }
+  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 20px; margin-top: 32px; }
+  .step-card {
+    background:#fff; border-radius: var(--radius); padding: 26px 22px;
+    border:1.5px solid var(--border); transition: all .25s;
+  }
+  .step-card:hover { border-color: var(--amber-lt); transform: translateY(-4px); box-shadow: var(--shadow); }
+  .step-card .step-icon { font-size: 2rem; margin-bottom: 14px; }
+  .step-card .step-num  { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--amber); margin-bottom:6px; }
+  .step-card h3 { font-size: .98rem; font-weight: 600; margin-bottom: 8px; }
+  .step-card p  { font-size: .85rem; color: var(--muted); line-height: 1.58; }
+
+  /* ── EMERGENCY ── */
+  .emergency-block {
+    background: linear-gradient(135deg,var(--amber-dk) 0%,#7A2D0A 100%);
+    border-radius: 20px; padding: 40px; margin: 0 5vw 56px; color: #fff;
+  }
+  .emergency-block h2 { font-family:'Playfair Display',serif; font-size:1.7rem; margin-bottom:6px; }
+  .emergency-block p  { opacity:.82; font-size:.92rem; margin-bottom:28px; }
+  .helplines { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; }
+  .hl-card { background:rgba(255,255,255,.13); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:16px 18px; }
+  .hl-card .org  { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; opacity:.75; margin-bottom:4px; }
+  .hl-card .name { font-weight:600; font-size:.92rem; margin-bottom:4px; }
+  .hl-card .num  { font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:700; }
+
+  /* ── REPORT FORM ── */
+  .report-page { padding: 56px 5vw; max-width: 740px; margin: 0 auto; }
+  .report-page h1 { font-family:'Playfair Display',serif; font-size: 2rem; margin-bottom: 6px; }
+  .report-page .sub { color:var(--muted); margin-bottom:32px; }
+  .form-card { background:#fff; border-radius:18px; padding:36px; border:1.5px solid var(--border); box-shadow:var(--shadow); }
+  .animal-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+  .animal-opt {
+    background: var(--cream); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 6px; text-align: center; cursor: pointer; transition: all .2s;
+  }
+  .animal-opt .em { font-size: 1.7rem; display: block; margin-bottom: 4px; }
+  .animal-opt .lbl { font-size: .75rem; font-weight: 500; color: var(--ink-lt); }
+  .animal-opt:hover { border-color: var(--amber-lt); }
+  .animal-opt.sel   { border-color: var(--amber); background: #fff9f0; }
+  .animal-opt.sel .lbl { color: var(--amber-dk); font-weight: 700; }
+  .photo-upload-box {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 28px; text-align: center; cursor: pointer;
+    background: var(--cream); position: relative; transition: all .2s;
+  }
+  .photo-upload-box:hover { border-color:var(--amber-lt); background:#fffaf5; }
+  .photo-upload-box input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .photo-upload-box .uico { font-size: 2rem; margin-bottom: 8px; }
+  .photo-upload-box p { color:var(--muted); font-size:.85rem; }
+  .photo-upload-box strong { color:var(--amber); }
+  #photo-preview { display:none; width:100%; max-height:200px; object-fit:cover; border-radius:var(--radius-sm); margin-top:10px; }
+  .phone-wrap { display:flex; gap:0; }
+  .phone-pre  { background:var(--border); border:1.5px solid var(--border); border-right:none; border-radius:var(--radius-sm) 0 0 var(--radius-sm); padding:11px 12px; font-size:.85rem; font-weight:600; color:var(--ink-lt); display:flex; align-items:center; white-space:nowrap; }
+  .phone-wrap input { border-radius:0 var(--radius-sm) var(--radius-sm) 0 !important; flex:1; }
+  .phone-cnt { font-size:.72rem; color:var(--muted); text-align:right; margin-top:3px; }
+  .phone-cnt.full { color:var(--green); font-weight:600; }
+
+  /* ── DASHBOARD ── */
+  .dash-page { padding: 56px 5vw; max-width: 1160px; margin: 0 auto; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .filter-btn { padding:7px 18px; border-radius:999px; border:1.5px solid var(--border); background:#fff; font-family:'DM Sans',sans-serif; font-size:.83rem; font-weight:500; cursor:pointer; transition:all .2s; }
+  .filter-btn:hover,.filter-btn.active { background:var(--amber); border-color:var(--amber); color:#fff; }
+  .cases-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(290px,1fr)); gap: 20px; }
+  .case-card { background:#fff; border-radius:var(--radius); border:1.5px solid var(--border); overflow:hidden; transition:all .25s; }
+  .case-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); border-color:var(--amber-lt); }
+  .case-img  { height:168px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f5e6d3,#fdecd8); font-size:3.5rem; overflow:hidden; }
+  .case-img img { width:100%; height:100%; object-fit:cover; }
+  .case-body { padding:16px; }
+  .case-meta { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .case-id   { font-size:.72rem; color:var(--muted); font-weight:600; }
+  .case-animal { font-size:.82rem; color:var(--amber-dk); font-weight:700; margin-bottom:4px; }
+  .case-loc    { font-size:.83rem; color:var(--muted); margin-bottom:6px; }
+  .case-desc   { font-size:.85rem; color:var(--ink-lt); line-height:1.5; }
+  .case-footer { display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:.75rem; color:var(--muted); }
+  .empty-state { grid-column:1/-1; text-align:center; padding:56px 20px; color:var(--muted); }
+  .empty-state .ico { font-size:3.5rem; margin-bottom:12px; }
+  .loading-grid { grid-column:1/-1; text-align:center; padding:48px; color:var(--muted); }
+
+  /* ── VOLUNTEER ── */
+  .vol-page { padding:56px 5vw; max-width:940px; margin:0 auto; display:grid; grid-template-columns:1fr 1.1fr; gap:56px; align-items:start; }
+  .vol-info h1 { font-family:'Playfair Display',serif; font-size:2rem; margin-bottom:14px; }
+  .vol-info p  { color:var(--muted); line-height:1.7; margin-bottom:22px; }
+  .perks { display:flex; flex-direction:column; gap:10px; }
+  .perk  { display:flex; align-items:center; gap:12px; padding:13px 15px; background:#fff; border-radius:var(--radius-sm); border:1.5px solid var(--border); }
+  .perk .ico { font-size:1.3rem; }
+  .perk p   { font-size:.86rem; color:var(--ink-lt); }
+  .vol-form { background:#fff; border-radius:18px; padding:32px; border:1.5px solid var(--border); box-shadow:var(--shadow); }
+  .vol-form h2 { font-family:'Playfair Display',serif; font-size:1.4rem; margin-bottom:22px; }
+  .help-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .help-opt  { background:var(--cream); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 6px; text-align:center; cursor:pointer; transition:all .2s; }
+  .help-opt .ico  { font-size:1.6rem; display:block; margin-bottom:5px; }
+  .help-opt .lbl  { font-size:.78rem; font-weight:500; color:var(--ink-lt); }
+  .help-opt:hover { border-color:var(--teal-lt); }
+  .help-opt.sel   { border-color:var(--teal); background:#f0fafb; }
+  .help-opt.sel .lbl { color:var(--teal); font-weight:700; }
+
+  /* ── CONTACT ── */
+  .contact-page { padding:56px 5vw; max-width:980px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:start; }
+  .contact-info h1 { font-family:'Playfair Display',serif; font-size:2rem; margin-bottom:14px; }
+  .contact-info p  { color:var(--muted); line-height:1.7; margin-bottom:28px; }
+  .c-items { display:flex; flex-direction:column; gap:14px; }
+  .c-item  { display:flex; align-items:flex-start; gap:12px; }
+  .c-item .ico { width:42px; height:42px; background:var(--cream); border:1.5px solid var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+  .c-item strong { display:block; font-size:.86rem; font-weight:600; margin-bottom:2px; }
+  .c-item span   { font-size:.83rem; color:var(--muted); }
+  .contact-form-card { background:#fff; border-radius:18px; padding:32px; border:1.5px solid var(--border); box-shadow:var(--shadow); }
+  .contact-form-card h2 { font-family:'Playfair Display',serif; font-size:1.4rem; margin-bottom:22px; }
+
+  /* ── MAP BLOCK ── */
+  .map-block { background:linear-gradient(135deg,#e8f4f5,#d4ecee); border-radius:var(--radius); border:1.5px solid var(--border); padding:44px; margin:0 5vw 52px; text-align:center; }
+  .map-block .ico { font-size:2.8rem; margin-bottom:10px; }
+  .map-block h3   { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--teal); margin-bottom:6px; }
+  .map-block p    { color:var(--muted); font-size:.88rem; max-width:400px; margin:0 auto; }
+  .map-block a    { color:var(--teal); font-weight:600; text-decoration:none; }
+
+  /* ── FOOTER ── */
+  footer { background:var(--ink); color:rgba(255,255,255,.6); padding:36px 5vw; margin-top:56px; }
+  .footer-inner { max-width:1160px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-logo  { font-family:'Playfair Display',serif; font-size:1.15rem; color:#fff; }
+  .footer-logo span { color:var(--amber-lt); }
+  .footer-links { display:flex; gap:18px; flex-wrap:wrap; }
+  .footer-links a { color:rgba(255,255,255,.5); font-size:.83rem; cursor:pointer; transition:color .2s; }
+  .footer-links a:hover { color:var(--amber-lt); }
+  .footer-copy  { font-size:.76rem; opacity:.4; width:100%; text-align:center; margin-top:16px; border-top:1px solid rgba(255,255,255,.1); padding-top:16px; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:860px) {
+    .hero { grid-template-columns:1fr; gap:36px; }
+    .vol-page { grid-template-columns:1fr; gap:28px; }
+    .contact-page { grid-template-columns:1fr; gap:28px; }
+  }
+  @media(max-width:520px) {
+    .animal-grid  { grid-template-columns:repeat(3,1fr); }
+    .hero-btns { flex-direction:column; }
+    .btn-primary,.btn-secondary,.btn-teal { width:100%; justify-content:center; }
+    .helplines { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">🐾 Paw<span>Alert</span></div>
+  <div class="nav-links">
+    <a onclick="showPage('home')"      data-page="home"      class="active">Home</a>
+    <a onclick="showPage('report')"    data-page="report">Report</a>
+    <a onclick="showPage('dashboard')" data-page="dashboard">Dashboard</a>
+    <a onclick="showPage('volunteer')" data-page="volunteer">Volunteer</a>
+    <a onclick="showPage('contact')"   data-page="contact">Contact</a>
+  </div>
+  <div class="nav-right">
+    <div class="user-chip">
+      <div class="av" id="nav-av">?</div>
+      <span id="nav-name">…</span>
+    </div>
+    <button class="nav-logout" onclick="logout()">Logout</button>
+  </div>
+  <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="showPage('home');closeMenu()"      data-page="home">🏠 Home</a>
+  <a onclick="showPage('report');closeMenu()"    data-page="report">📋 Report Animal</a>
+  <a onclick="showPage('dashboard');closeMenu()" data-page="dashboard">📊 Dashboard</a>
+  <a onclick="showPage('volunteer');closeMenu()" data-page="volunteer">🙋 Volunteer</a>
+  <a onclick="showPage('contact');closeMenu()"   data-page="contact">✉️ Contact</a>
+  <a onclick="logout()" style="color:var(--red)">⏻ Logout</a>
+</div>
+
+<!-- ════════════════════════════════
+     HOME PAGE
+════════════════════════════════ -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-text">
+      <h1>Every <em>street animal</em> deserves a chance to be safe.</h1>
+      <p>PawAlert connects people who spot injured or abandoned animals with nearby volunteers, NGOs, and veterinarians — in minutes, not hours.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="showPage('report')">🚨 Report an Animal in Need</button>
+        <button class="btn btn-secondary" onclick="showPage('volunteer')">🙋 Become a Volunteer</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-paw">🐾</div>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:18px">Live platform statistics</p>
+      <div class="hero-stats">
+        <div class="stat-item"><div class="num" id="h-reports">—</div><div class="lbl">Reports Filed</div></div>
+        <div class="stat-item"><div class="num" id="h-resolved">—</div><div class="lbl">Resolved</div></div>
+        <div class="stat-item"><div class="num" id="h-vols">—</div><div class="lbl">Volunteers</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="sec-eyebrow">How It Works</p>
+    <h2 class="sec-title">Help an animal in 3 simple steps</h2>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-icon">📍</div><div class="step-num">Step 01</div><h3>Spot & Report</h3><p>Fill our quick form with location, animal type, and a photo. Under 2 minutes.</p></div>
+      <div class="step-card"><div class="step-icon">🔔</div><div class="step-num">Step 02</div><h3>Alert Goes Out</h3><p>Nearby volunteers and NGOs are notified immediately with location details.</p></div>
+      <div class="step-card"><div class="step-icon">🏥</div><div class="step-num">Step 03</div><h3>Help Arrives</h3><p>A volunteer or vet rushes to the scene. Track the status live on the dashboard.</p></div>
+      <div class="step-card"><div class="step-icon">💚</div><div class="step-num">Step 04</div><h3>Resolution & Care</h3><p>Case marked resolved once the animal is safe. Your report saves lives!</p></div>
+    </div>
+  </div>
+
+  <div class="map-block" style="padding: 0; overflow: hidden; border: none; background: transparent;">
+    <div id="rescue-map"></div>
+  </div>
+
+  <div class="emergency-block">
+    <h2>🆘 Emergency Animal Helplines</h2>
+    <p>Can't wait? Call these helplines directly for immediate rescue assistance.</p>
+    <div class="helplines">
+      <div class="hl-card"><div class="org">All India</div><div class="name">Animal Welfare Board</div><div class="num">1800-180-5236</div></div>
+      <div class="hl-card"><div class="org">Bengaluru</div><div class="name">CUPA Animal Rescue</div><div class="num">+91 98450 99817</div></div>
+      <div class="hl-card"><div class="org">Mumbai</div><div class="name">BSPCA Helpline</div><div class="num">+91 22 2417 6086</div></div>
+      <div class="hl-card"><div class="org">Delhi</div><div class="name">Friendicoes SECA</div><div class="num">+91 11 2634 6622</div></div>
+      <div class="hl-card"><div class="org">Chennai</div><div class="name">Blue Cross India</div><div class="num">+91 44 2235 1001</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     REPORT PAGE
+════════════════════════════════ -->
+<div id="page-report" class="page">
+  <div class="report-page">
+    <h1>Report an Animal in Need</h1>
+    <p class="sub">Fill in the details below and we'll alert the nearest volunteers and vets immediately.</p>
+
+    <div class="form-card">
+      <div class="alert alert-error" id="rpt-err"><span class="alert-icon">⚠️</span><span id="rpt-err-msg"></span></div>
+      <div class="alert alert-success" id="rpt-ok"><span class="alert-icon">✅</span><span id="rpt-ok-msg"></span></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Your Name <span class="req">*</span></label>
+          <input type="text" id="rpt-name" placeholder="e.g. Priya Sharma">
+          <div class="field-err" id="rpt-name-err">Name is required</div>
+        </div>
+        <div class="form-group">
+          <label>Phone Number <span class="req">*</span></label>
+          <div class="phone-wrap">
+            <div class="phone-pre">🇮🇳 +91</div>
+            <input type="tel" id="rpt-phone" placeholder="10-digit number"
+              maxlength="10" inputmode="numeric"
+              oninput="onPhoneInput(this,'rpt-phone-cnt')"
+              onkeypress="return onlyNum(event)">
+          </div>
+          <div class="phone-cnt" id="rpt-phone-cnt">0 / 10 digits</div>
+          <div class="field-err" id="rpt-phone-err">Exactly 10 digits required</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Location / Address <span class="req">*</span></label>
+        <input type="text" id="rpt-loc" placeholder="e.g. Near Indiranagar Metro Station, Bengaluru">
+        <div class="field-err" id="rpt-loc-err">Location is required</div>
+      </div>
+
+      <div class="form-group">
+        <label>Type of Animal <span class="req">*</span></label>
+        <div class="animal-grid">
+          <div class="animal-opt" onclick="selAnimal(this,'Dog')">  <span class="em">🐶</span><span class="lbl">Dog</span></div>
+          <div class="animal-opt" onclick="selAnimal(this,'Cat')">  <span class="em">🐱</span><span class="lbl">Cat</span></div>
+          <div class="animal-opt" onclick="selAnimal(this,'Cow')">  <span class="em">🐄</span><span class="lbl">Cow</span></div>
+          <div class="animal-opt" onclick="selAnimal(this,'Bird')"> <span class="em">🐦</span><span class="lbl">Bird</span></div>
+          <div class="animal-opt" onclick="selAnimal(this,'Other')"><span class="em">🐾</span><span class="lbl">Other</span></div>
+        </div>
+        <div class="field-err" id="rpt-animal-err">Please select an animal type</div>
+      </div>
+
+      <div class="form-group">
+        <label>Problem Description <span class="req">*</span></label>
+        <textarea id="rpt-desc" placeholder="e.g. Injured dog with bleeding paw near bus stop — cannot walk." style="min-height:100px"></textarea>
+        <div class="field-err" id="rpt-desc-err">Description is required</div>
+      </div>
+
+      <div class="form-group">
+        <label>Upload Photo of Animal <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <div class="photo-upload-box" id="photoBox">
+          <input type="file" accept="image/*" id="rpt-photo" onchange="previewPhoto(this)">
+          <div class="uico">📷</div>
+          <p><strong>Click to upload</strong> or drag & drop</p>
+          <p style="font-size:.75rem;margin-top:4px">JPG, PNG, WEBP — max 2MB</p>
+          <img id="photo-preview" alt="Preview">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="rpt-btn" onclick="submitReport()" style="font-size:1rem;padding:14px;">
+        🚨 Submit Rescue Request
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     DASHBOARD PAGE
+════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+  <div class="dash-page">
+    <h2 class="sec-title" style="margin-bottom:6px">Rescue Dashboard</h2>
+    <p class="sec-sub" style="margin-bottom:20px">All reported animal rescue cases — live status from database.</p>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterCases('all',this)">All Cases</button>
+      <button class="filter-btn" onclick="filterCases('Pending',this)">🟡 Pending</button>
+      <button class="filter-btn" onclick="filterCases('In Progress',this)">🔵 In Progress</button>
+      <button class="filter-btn" onclick="filterCases('Resolved',this)">🟢 Resolved</button>
+    </div>
+    <div class="cases-grid" id="casesGrid">
+      <div class="loading-grid">⏳ Loading cases…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     VOLUNTEER PAGE
+════════════════════════════════ -->
+<div id="page-volunteer" class="page">
+  <div class="vol-page">
+    <div class="vol-info">
+      <h1>Become a Volunteer</h1>
+      <p>Your time and compassion can save lives. Join our network of dedicated volunteers who rescue, feed, and care for street animals every day.</p>
+      <div class="perks">
+        <div class="perk"><div class="ico">📍</div><p><strong>Local Impact</strong> — Only alerted for cases near your area.</p></div>
+        <div class="perk"><div class="ico">🔔</div><p><strong>Instant Alerts</strong> — SMS when an animal near you needs help.</p></div>
+        <div class="perk"><div class="ico">🤝</div><p><strong>NGO Network</strong> — Connect with established animal welfare orgs.</p></div>
+        <div class="perk"><div class="ico">🏆</div><p><strong>Recognition</strong> — Your rescues are recorded and celebrated.</p></div>
+      </div>
+    </div>
+    <div class="vol-form">
+      <h2>Register as Volunteer</h2>
+      <div class="alert alert-error" id="vol-err"><span class="alert-icon">⚠️</span><span id="vol-err-msg"></span></div>
+      <div class="alert alert-success" id="vol-ok"><span class="alert-icon">🎉</span><span id="vol-ok-msg"></span></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="v-name" placeholder="Your full name">
+          <div class="field-err" id="v-name-err">Required</div>
+        </div>
+        <div class="form-group">
+          <label>Phone <span class="req">*</span></label>
+          <div class="phone-wrap">
+            <div class="phone-pre">🇮🇳 +91</div>
+            <input type="tel" id="v-phone" placeholder="10 digits"
+              maxlength="10" inputmode="numeric"
+              oninput="onPhoneInput(this,'v-phone-cnt')"
+              onkeypress="return onlyNum(event)">
+          </div>
+          <div class="phone-cnt" id="v-phone-cnt">0 / 10 digits</div>
+          <div class="field-err" id="v-phone-err">Exactly 10 digits</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Service Area / Neighbourhood <span class="req">*</span></label>
+        <input type="text" id="v-area" placeholder="e.g. Koramangala, Bengaluru">
+        <div class="field-err" id="v-area-err">Required</div>
+      </div>
+
+      <div class="form-group">
+        <label>How can you help? <span class="req">*</span></label>
+        <div class="help-grid">
+          <div class="help-opt" onclick="selHelp(this,'Rescue')"> <span class="ico">🚑</span><span class="lbl">Rescue</span></div>
+          <div class="help-opt" onclick="selHelp(this,'Medical')"><span class="ico">💉</span><span class="lbl">Medical</span></div>
+          <div class="help-opt" onclick="selHelp(this,'Food')">   <span class="ico">🍖</span><span class="lbl">Food</span></div>
+        </div>
+        <div class="field-err" id="v-help-err">Please select a help type</div>
+      </div>
+
+      <div class="form-group">
+        <label>Email <span style="font-weight:400;color:var(--muted)">(for notifications)</span></label>
+        <input type="email" id="v-email" placeholder="you@email.com">
+      </div>
+
+      <button class="btn btn-teal btn-block" id="vol-btn" onclick="submitVolunteer()" style="font-size:.95rem;padding:13px;">
+        🙋 Register as Volunteer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     CONTACT PAGE
+════════════════════════════════ -->
+<div id="page-contact" class="page">
+  <div class="contact-page">
+    <div class="contact-info">
+      <h1>Get in Touch</h1>
+      <p>Questions about PawAlert? Want to partner with us as an NGO or veterinary clinic? We'd love to hear from you.</p>
+      <div class="c-items">
+        <div class="c-item"><div class="ico">📧</div><div><strong>Email</strong><span>help@pawalert.in</span></div></div>
+        <div class="c-item"><div class="ico">📞</div><div><strong>Helpline (9am–9pm)</strong><span>+91 98765 43210</span></div></div>
+        <div class="c-item"><div class="ico">📍</div><div><strong>Office</strong><span>Bengaluru, Karnataka, India</span></div></div>
+        <div class="c-item"><div class="ico">🐦</div><div><strong>Social</strong><span>@PawAlertIndia on Instagram & X</span></div></div>
+      </div>
+    </div>
+    <div class="contact-form-card">
+      <h2>Send a Message</h2>
+      <div class="alert alert-success" id="ct-ok"><span class="alert-icon">✅</span><span>Message sent! We'll reply within 24 hours.</span></div>
+      <div class="form-group"><label>Your Name</label><input type="text" id="ct-name" placeholder="Full Name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="ct-email" placeholder="you@email.com"></div>
+      <div class="form-group"><label>Subject</label>
+        <select id="ct-subject">
+          <option value="">Select a subject</option>
+          <option>Partnership / NGO Registration</option>
+          <option>Volunteer Query</option>
+          <option>Technical Issue</option>
+          <option>General Enquiry</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea id="ct-msg" placeholder="Write your message here…"></textarea></div>
+      <button class="btn btn-primary btn-block" onclick="submitContact()">Send Message ✉️</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">🐾 Paw<span>Alert</span></div>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Home</a>
+      <a onclick="showPage('report')">Report</a>
+      <a onclick="showPage('dashboard')">Dashboard</a>
+      <a onclick="showPage('volunteer')">Volunteer</a>
+      <a onclick="showPage('contact')">Contact</a>
+      <a href="admin-login.html" style="color:rgba(255,255,255,.35)">Admin</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2025 PawAlert — Built with ❤️ for street animals across India.</div>
+</footer>
+
+<!-- ── AI CHATBOX ── -->
+<div id="chat-widget">
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+      <span>🤖 PawAlert AI</span>
+      <button class="chat-close" onclick="toggleChat()">✖</button>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-msg bot">Hi! I am the PawAlert assistant. How can I help you today?</div>
+    </div>
+    <div class="chat-typing" id="chatTyping">AI is typing...</div>
+    <div class="chat-footer">
+      <input type="text" class="chat-input" id="chatInput" placeholder="Ask me about PawAlert..." onkeypress="handleChatKey(event)">
+      <button class="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+  <button class="chat-btn" onclick="toggleChat()">💬</button>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const API = 'http://localhost:5000/api';
+
+/* ── AUTH GUARD ── */
+const token = localStorage.getItem('pawToken');
+if (!token) { window.location.href = 'login.html'; }
+
+const user = JSON.parse(localStorage.getItem('pawUser') || '{}');
+document.getElementById('nav-name').textContent = user.name || 'User';
+document.getElementById('nav-av').textContent   = (user.name||'U')[0].toUpperCase();
+
+function authHeaders() {
+  return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
+}
+
+/* ── NAV ── */
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('[data-page]').forEach(a =>
+    a.classList.toggle('active', a.dataset.page === id));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if (id==='dashboard') loadCases(activeFilter);
+  if (id==='home')      loadHomeStats();
+}
+function toggleMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+function closeMenu()  { document.getElementById('mobileMenu').classList.remove('open'); }
+
+function logout() {
+  localStorage.removeItem('pawToken');
+  localStorage.removeItem('pawUser');
+  window.location.href = 'login.html';
+}
+
+/* ── TOAST ── */
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show '+(type||'');
+  setTimeout(() => t.className = '', 3200);
+}
+
+/* ── PHONE HELPERS ── */
+function onlyNum(e) {
+  return /^\d$/.test(e.key) ||
+    ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key);
+}
+function onPhoneInput(inp, cntId) {
+  inp.value = inp.value.replace(/\D/g,'').slice(0,10);
+  const len = inp.value.length;
+  const el  = document.getElementById(cntId);
+  el.textContent = `${len} / 10 digits`;
+  el.className = 'phone-cnt' + (len===10 ? ' full' : '');
+}
+
+/* ── FIELD ERRORS ── */
+function showFE(id, msg) {
+  const el = document.getElementById(id); if(!el) return;
+  el.textContent = msg; el.classList.add('show');
+}
+function clearFE(id) {
+  const el = document.getElementById(id); if(!el) return;
+  el.classList.remove('show');
+}
+
+/* ── HOME STATS ── */
+async function loadHomeStats() {
+  try {
+    const [reports, vols] = await Promise.all([
+      fetch(API+'/reports').then(r=>r.json()),
+      fetch(API+'/volunteers').then(r=>r.json())
+    ]);
+    animateNum('h-reports', reports.length);
+    animateNum('h-resolved', reports.filter(r=>r.status==='Resolved').length);
+    animateNum('h-vols', vols.length);
+    setTimeout(() => geocodeAndPlot(reports), 500); // Give map div time to render
+  } catch { }
+}
+function animateNum(id, target) {
+  let cur = 0; const el = document.getElementById(id);
+  const step = Math.max(1, Math.ceil(target/40));
+  const t = setInterval(() => {
+    cur = Math.min(cur+step, target);
+    el.textContent = cur;
+    if (cur >= target) clearInterval(t);
+  }, 40);
+}
+loadHomeStats();
+
+/* ── ANIMAL SELECTOR ── */
+let selAnimalVal = '';
+function selAnimal(el, type) {
+  document.querySelectorAll('.animal-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel'); selAnimalVal = type;
+}
+
+/* ── HELP TYPE SELECTOR ── */
+let selHelpVal = '';
+function selHelp(el, type) {
+  document.querySelectorAll('.help-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel'); selHelpVal = type;
+}
+
+/* ── PHOTO PREVIEW ── */
+function previewPhoto(inp) {
+  const file = inp.files[0]; if (!file) return;
+  if (file.size > 2*1024*1024) {
+    showToast('⚠️ Photo must be under 2MB','error'); inp.value=''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('photo-preview');
+    img.src = e.target.result; img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── SUBMIT REPORT ── */
+async function submitReport() {
+  ['rpt-err','rpt-ok'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['rpt-name-err','rpt-phone-err','rpt-loc-err','rpt-animal-err','rpt-desc-err'].forEach(clearFE);
+
+  const name  = document.getElementById('rpt-name').value.trim();
+  const phone = document.getElementById('rpt-phone').value.trim();
+  const loc   = document.getElementById('rpt-loc').value.trim();
+  const desc  = document.getElementById('rpt-desc').value.trim();
+
+  let ok = true;
+  if (!name)                         { showFE('rpt-name-err','Name is required'); ok=false; }
+  if (!phone || phone.length !== 10) { showFE('rpt-phone-err','Exactly 10 digits required'); ok=false; }
+  if (!loc)                          { showFE('rpt-loc-err','Location is required'); ok=false; }
+  if (!selAnimalVal)                 { showFE('rpt-animal-err','Please select an animal type'); ok=false; }
+  if (!desc)                         { showFE('rpt-desc-err','Description is required'); ok=false; }
+  if (!ok) return;
+
+  // optional base64 photo
+  let photoB64 = '';
+  const file = document.getElementById('rpt-photo').files[0];
+  if (file) {
+    photoB64 = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.readAsDataURL(file);
+    });
+  }
+
+  const btn = document.getElementById('rpt-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Submitting…';
+
+  try {
+    const res  = await fetch(API+'/reports', {
+      method:'POST', headers: authHeaders(),
+      body: JSON.stringify({name, phone, location:loc, animal:selAnimalVal, desc, photo:photoB64})
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      document.getElementById('rpt-err').classList.add('show');
+      document.getElementById('rpt-err-msg').textContent = json.error || 'Submission failed';
+      return;
+    }
+    document.getElementById('rpt-ok').classList.add('show');
+    document.getElementById('rpt-ok-msg').textContent = json.message || 'Report submitted!';
+    showToast('✅ '+json.message, 'success');
+    // reset
+    ['rpt-name','rpt-phone','rpt-loc','rpt-desc'].forEach(id => document.getElementById(id).value='');
+    document.querySelectorAll('.animal-opt').forEach(o=>o.classList.remove('sel'));
+    selAnimalVal='';
+    const pi = document.getElementById('photo-preview'); pi.src=''; pi.style.display='none';
+    document.getElementById('rpt-phone-cnt').textContent='0 / 10 digits';
+    document.getElementById('rpt-phone-cnt').className='phone-cnt';
+  } catch {
+    document.getElementById('rpt-err').classList.add('show');
+    document.getElementById('rpt-err-msg').textContent = 'Server error — is the backend running?';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🚨 Submit Rescue Request';
+  }
+}
+
+/* ── DASHBOARD ── */
+let activeFilter = 'all';
+
+async function loadCases(filter='all') {
+  activeFilter = filter;
+  const grid = document.getElementById('casesGrid');
+  grid.innerHTML = '<div class="loading-grid">⏳ Loading cases from database…</div>';
+  try {
+    const url = filter==='all' ? API+'/reports' : API+'/reports?status='+encodeURIComponent(filter);
+    const cases = await fetch(url).then(r=>r.json());
+    if (!cases.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="ico">🐾</div><p>No cases found for this filter.</p></div>';
+      return;
+    }
+    const emojiMap = {Dog:'🐶',Cat:'🐱',Cow:'🐄',Bird:'🐦',Other:'🐾'};
+    grid.innerHTML = cases.map(c => {
+      const cls = c.status==='Pending'?'pending':c.status==='In Progress'?'progress':'resolved';
+      const imgHtml = c.photo
+        ? `<img src="${c.photo}" alt="${c.animal}" onerror="this.parentElement.innerHTML='${c.emoji||emojiMap[c.animal]||'🐾'}'">` 
+        : (c.emoji || emojiMap[c.animal] || '🐾');
+      return `
+        <div class="case-card">
+          <div class="case-img">${imgHtml}</div>
+          <div class="case-body">
+            <div class="case-meta">
+              <span class="case-id">${c.case_id||c._id?.slice(-6)||'—'}</span>
+              <span class="badge badge-${cls}">${c.status}</span>
+            </div>
+            <div class="case-animal">${c.emoji||emojiMap[c.animal]||'🐾'} ${c.animal}</div>
+            <div class="case-loc">📍 ${c.location}</div>
+            <div class="case-desc">${(c.desc||'').slice(0,100)}${c.desc?.length>100?'…':''}</div>
+            ${c.assigned ? `<div style="margin-top:8px;font-size:.78rem;color:var(--teal)">👤 ${c.assigned}</div>` : ''}
+            <div class="case-footer">
+              <span>Reported by ${c.reporter}</span>
+              <span>📅 ${c.created_at||''}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch {
+    grid.innerHTML = '<div class="empty-state"><div class="ico">❌</div><p>Could not load cases. Is the backend running?</p></div>';
+  }
+}
+
+function filterCases(f, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  loadCases(f);
+}
+
+/* ── SUBMIT VOLUNTEER ── */
+async function submitVolunteer() {
+  ['vol-err','vol-ok'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  ['v-name-err','v-phone-err','v-area-err','v-help-err'].forEach(clearFE);
+
+  const name  = document.getElementById('v-name').value.trim();
+  const phone = document.getElementById('v-phone').value.trim();
+  const area  = document.getElementById('v-area').value.trim();
+  const email = document.getElementById('v-email').value.trim();
+
+  let ok = true;
+  if (!name)                         { showFE('v-name-err','Required'); ok=false; }
+  if (!phone || phone.length !== 10) { showFE('v-phone-err','Exactly 10 digits'); ok=false; }
+  if (!area)                         { showFE('v-area-err','Required'); ok=false; }
+  if (!selHelpVal)                   { showFE('v-help-err','Please select a help type'); ok=false; }
+  if (!ok) return;
+
+  const btn = document.getElementById('vol-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Registering…';
+
+  try {
+    const res  = await fetch(API+'/volunteers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, phone, area, help_type:selHelpVal, email})
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      document.getElementById('vol-err').classList.add('show');
+      document.getElementById('vol-err-msg').textContent = json.error;
+      return;
+    }
+    document.getElementById('vol-ok').classList.add('show');
+    document.getElementById('vol-ok-msg').textContent = json.message || 'Registered!';
+    showToast('🎉 Welcome to PawAlert!','success');
+    ['v-name','v-phone','v-area','v-email'].forEach(id=>document.getElementById(id).value='');
+    document.querySelectorAll('.help-opt').forEach(o=>o.classList.remove('sel'));
+    selHelpVal='';
+  } catch {
+    document.getElementById('vol-err').classList.add('show');
+    document.getElementById('vol-err-msg').textContent='Server error — is the backend running?';
+  } finally {
+    btn.disabled=false; btn.innerHTML='🙋 Register as Volunteer';
+  }
+}
+
+/* ── CONTACT ── */
+async function submitContact() {
+  document.getElementById('ct-ok').classList.remove('show');
+  const name = document.getElementById('ct-name').value.trim();
+  const email= document.getElementById('ct-email').value.trim();
+  const msg  = document.getElementById('ct-msg').value.trim();
+  if (!name||!email||!msg) { showToast('⚠️ Please fill all fields','error'); return; }
+  document.getElementById('ct-ok').classList.add('show');
+  showToast('✉️ Message sent!','success');
+  ['ct-name','ct-email','ct-msg'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ct-subject').value='';
+}
+
+/* ── LEAFLET MAP ── */
+let map, markers = [];
+function initMap() {
+  if (map || typeof L === 'undefined') return;
+  map = L.map('rescue-map').setView([20.5937, 78.9629], 5); // India center
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+}
+async function geocodeAndPlot(cases) {
+  if (document.getElementById('page-home').style.display === 'none' && !map) return;
+  if (!map) initMap();
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  
+  const activeCases = cases.filter(c => c.status !== 'Resolved');
+  
+  for (const c of activeCases) {
+    if (!c.location) continue;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(c.location)}&limit=1`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = data[0].lat;
+        const lon = data[0].lon;
+        const emojiMap = {Dog:'🐶',Cat:'🐱',Cow:'🐄',Bird:'🐦',Other:'🐾'};
+        const m = L.marker([lat, lon]).addTo(map)
+          .bindPopup(`
+            <div class="map-popup-header">${c.emoji||emojiMap[c.animal]||'🐾'} ${c.animal} Emergency</div>
+            <div class="map-popup-detail"><strong>Status:</strong> ${c.status}</div>
+            <div class="map-popup-detail"><strong>Location:</strong> ${c.location}</div>
+          `);
+        markers.push(m);
+      }
+    } catch (e) {
+      console.error("Geocoding failed for", c.location);
+    }
+  }
+}
+
+/* ── AI CHATBOX ── */
+function toggleChat() {
+  document.getElementById('chatWindow').classList.toggle('open');
+}
+function handleChatKey(e) { if(e.key==='Enter') sendChat(); }
+async function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  
+  const body = document.getElementById('chatBody');
+  body.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+  inp.value = '';
+  body.scrollTop = body.scrollHeight;
+  
+  document.getElementById('chatTyping').style.display = 'block';
+  
+  try {
+    const res = await fetch(API+'/chat', {
+       method: 'POST', headers: {'Content-Type':'application/json'},
+       body: JSON.stringify({message: msg})
+    });
+    const json = await res.json();
+    document.getElementById('chatTyping').style.display = 'none';
+    body.innerHTML += `<div class="chat-msg bot">${json.data?.reply || 'Sorry, I am offline.'}</div>`;
+    body.scrollTop = body.scrollHeight;
+  } catch (e) {
+    document.getElementById('chatTyping').style.display = 'none';
+    body.innerHTML += `<div class="chat-msg bot" style="color:var(--red)">Connection Error</div>`;
+  }
+}
+</script>
+</body>
+</html>
